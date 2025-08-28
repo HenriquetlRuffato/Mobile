@@ -1,181 +1,189 @@
 import 'package:flutter/material.dart';
 
-void main() => runApp(const App());
+void main() {
+  runApp(const MyApp());
+}
 
-class App extends StatelessWidget {
-  const App({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Auth(
-      notifier: AuthController(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Rotas Privadas',
-        theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-        initialRoute: '/public',
-        onGenerateRoute: (settings) {
-          return MaterialPageRoute(
-            settings: settings,
-            builder: (context) {
-              final auth = Auth.of(context);
-              if (settings.name == '/public') return const PublicPage();
-              if (settings.name == '/restrita') {
-                if (auth.authed) return const RestritaPage();
-                return LoginGate(title: 'Área restrita', routeName: '/restrita', arguments: settings.arguments);
-              }
-              if (settings.name == '/dados') {
-                if (auth.authed) return const DadosPage();
-                return LoginGate(title: 'Dados do usuário', routeName: '/dados', arguments: settings.arguments);
-              }
-              return const Scaffold(body: Center(child: Text('404')));
-            },
-          );
+    return MaterialApp(
+      title: 'BottomNav com Tabs',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const MainNavigationScreen(),
+    );
+  }
+}
+
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
+
+  @override
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = [
+    const Page1(),
+    const Page2WithTabs(),
+    const Page3(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
         },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Módulo 1',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.widgets),
+            label: 'Módulo 2',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Módulo 3',
+          ),
+        ],
       ),
     );
   }
 }
 
-class AuthController extends ChangeNotifier {
-  bool authed = false;
-  void signIn() {
-    authed = true;
-    notifyListeners();
-  }
-  void signOut() {
-    authed = false;
-    notifyListeners();
-  }
-}
+class Page1 extends StatelessWidget {
+  const Page1({super.key});
 
-class Auth extends InheritedNotifier<AuthController> {
-  const Auth({super.key, required AuthController notifier, required Widget child}) : super(notifier: notifier, child: child);
-  static AuthController of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<Auth>()!.notifier!;
-}
-
-class PublicPage extends StatelessWidget {
-  const PublicPage({super.key});
   @override
   Widget build(BuildContext context) {
-    final auth = Auth.of(context);
+    return const Center(
+      child: Text('Conteúdo do Módulo 1'),
+    );
+  }
+}
+
+class Page3 extends StatelessWidget {
+  const Page3({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Conteúdo do Módulo 3'),
+    );
+  }
+}
+
+class Page2WithTabs extends StatefulWidget {
+  const Page2WithTabs({super.key});
+
+  @override
+  State<Page2WithTabs> createState() => _Page2WithTabsState();
+}
+
+class _Page2WithTabsState extends State<Page2WithTabs> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pública'),
-        actions: [
-          TextButton(
-            onPressed: () => auth.authed ? auth.signOut() : auth.signIn(),
-            child: Text(auth.authed ? 'Sair' : 'Entrar'),
-          )
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Status: ${auth.authed ? 'Autenticado' : 'Não autenticado'}'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/restrita'),
-              child: const Text('Ir para /restrita'),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  '/dados',
-                  arguments: {
-                    'nomeCompleto': 'João da Silva',
-                    'dataNascimento': '1999-08-12',
-                    'telefone': '(64) 9 9999-9999',
-                  },
-                );
-              },
-              child: const Text('Ir para /dados (com Map)'),
-            ),
+        title: const Text('Módulo 2 com Abas'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.cloud), text: 'Aba 1'),
+            Tab(icon: Icon(Icons.beach_access), text: 'Aba 2'),
+            Tab(icon: Icon(Icons.brightness_5), text: 'Aba 3'),
           ],
         ),
       ),
-    );
-  }
-}
-
-class RestritaPage extends StatelessWidget {
-  const RestritaPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final auth = Auth.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Restrita'),
-        actions: [
-          TextButton(onPressed: () => auth.signOut(), child: const Text('Sair')),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          TabContent(title: 'Conteúdo da Aba 1'),
+          TabContent(title: 'Conteúdo da Aba 2'),
+          TabContent(title: 'Conteúdo da Aba 3'),
         ],
       ),
-      body: const Center(child: Text('Conteúdo restrito.')),
     );
   }
 }
 
-class DadosPage extends StatelessWidget {
-  const DadosPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final auth = Auth.of(context);
-    final args = ModalRoute.of(context)!.settings.arguments as Map?;
-    final entries = args?.entries.map((e) => MapEntry(e.key.toString(), e.value?.toString() ?? '')).toList() ?? [];
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dados'),
-        actions: [
-          TextButton(onPressed: () => auth.signOut(), child: const Text('Sair')),
-        ],
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemBuilder: (_, i) {
-          final k = entries[i].key;
-          final v = entries[i].value;
-          return ListTile(title: Text(k), subtitle: Text(v));
-        },
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemCount: entries.length,
-      ),
-    );
-  }
-}
-
-class LoginGate extends StatelessWidget {
-  const LoginGate({super.key, required this.title, required this.routeName, this.arguments});
+class TabContent extends StatelessWidget {
   final String title;
-  final String routeName;
-  final Object? arguments;
+
+  const TabContent({super.key, required this.title});
+
   @override
   Widget build(BuildContext context) {
-    final auth = Auth.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetailPage(tabTitle: title),
+                ),
+              );
+            },
+            child: const Text('Ver Detalhes'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DetailPage extends StatelessWidget {
+  final String tabTitle;
+
+  const DetailPage({super.key, required this.tabTitle});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Autenticação necessária'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                auth.signIn();
-                Navigator.pushReplacementNamed(context, routeName, arguments: arguments);
-              },
-              child: const Text('Entrar'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Voltar'),
-            )
-          ],
+      appBar: AppBar(
+        title: Text('Detalhes de $tabTitle'),
+      ),
+      body: Center(
+        child: Text(
+          'Detalhes do conteúdo de $tabTitle',
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
     );
